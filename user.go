@@ -12,10 +12,15 @@ type User struct {
 	server *Server
 }
 
+func (u *User) sendMsg(msg string) {
+	u.conn.Write([]byte(msg))
+}
+
 func (u *User) ListenChannel() {
 	for {
 		msg := <-u.C
-		u.conn.Write([]byte(msg + "\n"))
+		//u.conn.Write([]byte(msg + "\n"))
+		u.sendMsg(msg + "\n")
 	}
 }
 
@@ -52,5 +57,14 @@ func (u *User) Offline() {
 }
 
 func (u *User) DoMessage(msg string) {
-	u.server.BroadCast(u, msg)
+	if msg == "who" {
+		u.server.mapLock.Lock()
+		for _, user := range u.server.OnlineMap {
+			onlineMsg := "[" + user.Addr + "]" + user.Name + ":" + "online"
+			u.sendMsg(onlineMsg)
+		}
+		u.server.mapLock.Unlock()
+	} else {
+		u.server.BroadCast(u, msg)
+	}
 }
