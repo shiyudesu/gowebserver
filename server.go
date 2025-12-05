@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"time"
 )
 
 type Server struct {
@@ -40,6 +41,8 @@ func (s *Server) Handler(conn net.Conn, server *Server) {
 
 	user.Online()
 
+	isLive := make(chan bool)
+
 	go func() {
 		buf := make([]byte, 4096)
 		for {
@@ -56,10 +59,21 @@ func (s *Server) Handler(conn net.Conn, server *Server) {
 			msg := string(buf[:n-1])
 
 			user.DoMessage(msg)
+
+			isLive <- true
 		}
 	}()
 
-	select {}
+	for {
+		select {
+		case <-isLive:
+		case <-time.After(time.Second * 10):
+			user.sendMsg("You are out")
+			close(user.C)
+			conn.Close()
+			return
+		}
+	}
 }
 
 func (s *Server) ListenMessage() {
