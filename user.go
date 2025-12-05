@@ -70,7 +70,7 @@ func (u *User) DoMessage(msg string) {
 
 		_, ok := u.server.OnlineMap[newName]
 		if ok {
-			u.sendMsg("This name has been used.")
+			u.sendMsg("This name has been used.\n")
 		} else {
 			u.server.mapLock.Lock()
 			delete(u.server.OnlineMap, u.Name)
@@ -79,6 +79,25 @@ func (u *User) DoMessage(msg string) {
 			u.Name = newName
 			u.sendMsg("Name update:" + u.Name + "\n")
 		}
+	} else if len(msg) > 3 && msg[:3] == "to|" {
+		remoteName := strings.Split(msg, "|")[1]
+		if remoteName == "" {
+			u.sendMsg("Wrong format, please use to|name|message\n")
+			return
+		}
+
+		remoteUser, ok := u.server.OnlineMap[remoteName]
+		if !ok {
+			u.sendMsg("User Not Found.\n")
+			return
+		}
+
+		content := strings.Split(msg, "|")[2]
+		if content == "" {
+			u.sendMsg("No Message.\n")
+			return
+		}
+		remoteUser.sendMsg(u.Name + "said:" + content)
 	} else {
 		u.server.BroadCast(u, msg)
 	}
